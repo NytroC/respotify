@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import firebase from './firebase.js';
-import './App.css';
 import axios from 'axios'
+import './App.css';
 
 class LoggedIn extends Component {
   constructor(props) {
@@ -17,6 +17,7 @@ class LoggedIn extends Component {
        this.currentUser.emailVerified = user.emailVerified;
        this.currentUser.uid = user.uid;
      }
+     
     
     this.state = {
       loaded: false,
@@ -33,17 +34,25 @@ class LoggedIn extends Component {
     };
   }
   componentDidMount() {
-    axios.get('http://ec2-54-152-183-53.compute-1.amazonaws.com:9292/')
+    axios.get('http://ec2-184-73-40-153.compute-1.amazonaws.com:9292/')
       .then(response => this.setState({songList: response.data, loaded: true}));
-    axios.get('http://ec2-54-152-183-53.compute-1.amazonaws.com:9292/genres')
-      .then(response => this.setState({genreList: response.data, loaded: true}));
-    axios.post('http://ec2-54-152-183-53.compute-1.amazonaws.com:9292/save-user', {
-      userName: this.currentUser.name,
-      userId: this.currentUser.uid,
-      userEmail: this.currentUser.email
-    }).then(
+    axios.get('http://ec2-184-73-40-153.compute-1.amazonaws.com:9292/genres')
+      .then(response => this.setState({genreList: response.data, loaded: true}))
+      .then(
       console.log(this.currentUser)
     )
+    fetch('http://ec2-184-73-40-153.compute-1.amazonaws.com:9292/save-user', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userName: this.currentUser.name,
+        userId: this.currentUser.uid,
+        userEmail: this.currentUser.email
+      })
+    })
   }
   setSong = (object) =>{
     this.setState({
@@ -54,7 +63,7 @@ class LoggedIn extends Component {
     });
   }
   setGenre = (object) =>{
-    axios.get(`http://ec2-54-152-183-53.compute-1.amazonaws.com:9292/artist/by/genre?genre=${object.genre}`)
+    axios.get(`http://ec2-184-73-40-153.compute-1.amazonaws.com:9292/artist/by/genre?genre=${object.genre}`)
       .then(response => {
         this.setState({currentGenre: object.genre, artistList: response.data, artistsLoaded: true});
         console.log(this.state.artistList)
@@ -66,8 +75,8 @@ class LoggedIn extends Component {
     this.props.history.push({
       pathname: '/Artist',
       state: {
+        genre: this.state.currentGenre,
         artist: object.artist,
-        color: 'green'
       }
     })
   }
@@ -83,47 +92,18 @@ class LoggedIn extends Component {
   render() {
     return (
       <div class="music-player">
-        <div class="player-main">
-          <div class="main-current">
-            <div class="current-info">
-              <h1>{this.state.currentSong}</h1>
-              <p>{this.state.currrentArtist}</p>
-            </div>
-          </div>
-          <div class="main-control">
-            <audio src={this.state.currentSongUrl} ref="player" >
-            </audio>
-            <div class="btn _previous" >
-            </div>
-            <div class={this.state.buttonState} onClick={this.play}>
-            </div>
-            <div class="btn _next">
-            </div>
-            <div class="btn _timeline">
-              <span class="current-time">1:32</span>
-              <span class="timescope">
-                <span class="timescope-dot"></span>
-              </span>
-              <span class="end-time">4:00</span>
-            </div>
-          </div>
-        </div>
+        
         <div>
         <table id ="notes-table" className="table table-striped table-dark">
           <thead>
             <tr>
               <th scope="col">Index</th>
-              <th scope="col">Artist</th>
-              <th scope="col">Album</th>
-              <th scope="col">Song</th>
+              <th scope="col">Genre</th>
             </tr>
           </thead>
           {this.state.loaded ? this.renderGenres() : null}
-          </table>
-          <table id ="artists-table" className="table table-striped table-dark">
-  
+        </table>
           {this.state.loaded ? this.renderArtists() : null}
-          </table>
         </div>
       </div>
     );
@@ -133,19 +113,20 @@ class LoggedIn extends Component {
     const {genreList} = this.state;
 
     return (
-      <tbody>
-      {
-        genreList.map(function(object,index) {
-          return (
-              <tr value={object} onClick={() => this.setGenre(object)}>
-                <td>{index + 1}</td>
-                <td>{object.genre}</td>
-                
-              </tr>
-          )
-        }, this)
-      }
-    </tbody>
+              <tbody>
+            {
+              genreList.map(function(object,index) {
+                return (
+                    <tr value={object} onClick={() => this.setGenre(object)}>
+                      <td>{index + 1}</td>
+                      <td>{object.genre}</td>
+                      
+                    </tr>
+                )
+              }, this)
+            }
+            </tbody>
+          
     )
   }
 
@@ -153,12 +134,18 @@ class LoggedIn extends Component {
     const {artistList} = this.state;
 
     return (
+      <table id ="artists-table" className="table table-striped table-dark">
+
+              <thead>
+                <tr>
+                  <th scope="col">{this.state.currentGenre}</th>
+                </tr>
+              </thead>
       <tbody>
       {
         artistList.map(function(object,index) {
           return (
               <tr value={object} onClick={() => this.redirectArtist(object)}>
-                <td>{index + 1}</td>
                 <td>{object.artist}</td>
                 
               </tr>
@@ -166,6 +153,7 @@ class LoggedIn extends Component {
         }, this)
       }
     </tbody>
+    </table>
     )
   }
 }
